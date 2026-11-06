@@ -47,19 +47,15 @@
         </div>
       </div>
 
-      <div class="code-card" aria-label="Docker quick start">
+      <div class="code-card" aria-label="uRep quick start">
         <div class="code-head">
           <span class="lights"><i></i><i></i><i></i></span>
-          <span>docker run</span>
+          <span>minimal setup</span>
         </div>
-        <pre><code><span class="cmd">docker run</span> -d --name urep-app \
-  <span class="flag">-e</span> UREP_TOKEN=<span class="str">'cluster-secret'</span> \
-  <span class="flag">-e</span> UREP_TAG=<span class="str">nginx</span> \
-  <span class="flag">-e</span> UREP_PATH=<span class="str">/urep/app.yaml</span> \
-  <span class="flag">-e</span> UREP_POST_HOOK=<span class="str">'nginx -s reload'</span> \
-  <span class="flag">-v</span> /home/app/app.yaml:/urep/app.yaml \
-  <span class="flag">-v</span> urep-state:/var/lib/urep \
-  urep:latest</code></pre>
+        <pre><code><span class="cmd">urep</span> <span class="flag">--token</span> <span class="str">'9cd1f4c1eee8049b6f5da0ed36773db4'</span> \
+     <span class="flag">--tag</span> <span class="str">nginx</span> \
+     <span class="flag">--path</span> <span class="str">/etc/nginx/nginx.conf</span> \
+     <span class="flag">--post-hook</span> <span class="str">'nginx -s reload'</span></code></pre>
       </div>
     </section>
 
