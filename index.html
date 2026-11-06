@@ -24,6 +24,7 @@
     <nav>
       <a href="#features">Features</a>
       <a href="#how">How it works</a>
+      <a href="#use-cases">Use cases</a>
       <a href="#quickstart">Quick start</a>
       <a href="https://github.com/nelebadnjak/urep/blob/master/docs/spec.md" target="_blank" rel="noopener">Spec</a>
       <a class="nav-cta" href="https://github.com/nelebadnjak/urep#readme" target="_blank" rel="noopener">Get uRep</a>
@@ -37,9 +38,9 @@
         <div class="badge"><span class="pulse"></span> P2P · no leader · git-backed</div>
         <h1>Configuration files that <span class="accent">keep themselves</span> in sync.</h1>
         <p class="lede">
-          uRep is a tiny, decentralized replication agent for configuration files.
-          Every node is equal. Every change is a git commit. Every message is
-          encrypted with your cluster token.
+          <b>uRep</b> is a tiny, decentralized replication agent for configuration files.
+          Every node is equal by default (or can be slave). Every change is a git commit so you can audit, trace and revert changes. Every message is
+          encrypted with your cluster token. Autodiscovery by default on local network so no suffering with  trackers, service discovery or DNS. 
         </p>
         <div class="actions">
           <a class="btn primary" href="#quickstart">Get started</a>
@@ -140,29 +141,110 @@
       </div>
     </section>
 
+    <section class="section" id="use-cases">
+      <p class="eyebrow">Use cases</p>
+      <h2>Make non-cluster software cluster-aware.</h2>
+      <p class="section-intro">
+        If a service reads a config file and has a reload command, uRep can keep
+        that file identical on every node and run the command when it changes.
+        That is usually all it takes to add clustering and HA to software that
+        has neither.
+      </p>
+
+      <div class="grid grid-2">
+        <article class="card">
+          <div class="icon">NGX</div>
+          <h3>NGINX fleets</h3>
+          <p>
+            Five nginx servers, one certificate renewal. The node running
+            certbot writes the new certificate and config; uRep replicates both
+            to the other four and runs <code>nginx -t &amp;&amp; nginx -s reload</code>
+            on each. Tag the fleet and nothing else sees the change.
+          </p>
+        </article>
+        <article class="card">
+          <div class="icon">WG</div>
+          <h3>WireGuard failover</h3>
+          <p>
+            Keep a standby WireGuard server current. <code>wg0.conf</code> is
+            replicated to the second node and applied with a hook, so failover
+            starts from an identical config instead of a copy someone forgot to
+            update.
+          </p>
+        </article>
+        <article class="card">
+          <div class="icon">DNS</div>
+          <h3>dnsmasq and hosts</h3>
+          <p>
+            Replicate <code>/etc/hosts</code> to every resolver. dnsmasq nodes
+            converge on the same records and reload, keeping internal and
+            split-horizon DNS consistent across sites.
+          </p>
+        </article>
+        <article class="card">
+          <div class="icon">WAN</div>
+          <h3>Multi-region over tunnels</h3>
+          <p>
+            A cluster does not have to stop at the LAN. Connect regions over
+            WireGuard or IPsec tunnels and point nodes at each other with
+            <code>UREP_SEEDS</code>; replication stays encrypted across the
+            tunnel.
+          </p>
+        </article>
+        <article class="card">
+          <div class="icon">SSH</div>
+          <h3>SSH access control</h3>
+          <p>
+            Keep <code>.ssh/authorized_keys</code> identical across a large
+            Linux fleet. Add or revoke a key once and every node converges, so
+            access is managed as a file instead of a ticket queue. Every edit is
+            a git commit, giving you an audit trail of who changed access and
+            when. A workstation can push the change with the token and one seed
+            node — no permanent cluster membership required.
+          </p>
+        </article>
+        <article class="card">
+          <div class="icon">EDGE</div>
+          <h3>Edge services</h3>
+          <p>
+            Load balancers, cache tiers and WAFs all sit at the edge and all
+            read their config from disk. Whether it is an HAProxy config, a
+            Varnish or nginx cache policy, or a ModSecurity/CRS ruleset, uRep
+            replicates the file and runs the validate-and-reload hook on every
+            node. Change it once; it lands everywhere consistently.
+          </p>
+        </article>
+      </div>
+
+      <p class="usecase-note">
+        <strong>Any file. Any hook.</strong> If it can be configured and
+        reloaded, it can be clustered.
+      </p>
+    </section>
+
     <section class="section" id="quickstart">
       <p class="eyebrow">Quick start</p>
       <div class="split">
         <div>
-          <h2>Two nodes, one file.</h2>
+          <h2>Multiple nodes, one file.</h2>
           <p class="section-intro">
-            Start <code>urep</code> on two hosts with the same token and tag.
+            Start <code>urep</code> on every host with the same token and tag.
             Node A watches the file; node B receives the change, writes it
             atomically, and runs the hook on its side. No config file, no
             coordinator.
           </p>
           <ul class="checklist">
-            <li>Same <code>--token</code> and <code>--tag</code> on both nodes</li>
+            <li>Same <code>--token</code> and <code>--tag</code> on all nodes</li>
             <li>Multicast discovery on one LAN; <code>UREP_SEEDS</code> across subnets</li>
             <li>Hooks run on the receiver, never on the sender</li>
-            <li>Two nodes on one host: give each its own <code>--listen</code> port</li>
+            <li>Multiple nodes on one host: give each its own <code>--listen</code> port</li>
             <li>Verify with <code>urep status</code>, <code>urep peers</code>, <code>urep log</code></li>
           </ul>
         </div>
         <div class="code-card">
           <div class="code-head">
             <span class="lights"><i></i><i></i><i></i></span>
-            <span>two nodes</span>
+            <span>multiple nodes</span>
           </div>
 <pre><code><span class="comment"># node A — 10.0.0.11</span>
 <span class="cmd">urep</span> <span class="flag">--token</span> <span class="str">'cluster-secret'</span> \
