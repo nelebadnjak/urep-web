@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>uRep — micro replication for configuration files</title>
+  <meta name="description" content="uRep is a decentralized P2P sync agent for configuration files. No leader, no database, git-backed, token-secured.">
+  <link rel="canonical" href="https://urep.dev/">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='6' r='4' fill='%237ee787'/%3E%3Ccircle cx='6' cy='24' r='4' fill='%237ee787'/%3E%3Ccircle cx='26' cy='24' r='4' fill='%237ee787'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --bg: #0a0e13;
+      --bg-soft: #0f151c;
+      --panel: #111922;
+      --panel-2: #0d1319;
+      --line: #1f2b36;
+      --line-strong: #2c3d4c;
+      --text: #e8eef4;
+      --muted: #93a3b3;
+      --muted-2: #6f8091;
+      --green: #7ee787;
+      --green-soft: #2ea043;
+      --cyan: #6ee7f2;
+      --amber: #f2c46e;
+      --radius: 16px;
+      --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(1100px 600px at 78% -10%, rgba(126, 231, 135, 0.09), transparent 60%),
+        radial-gradient(900px 500px at 8% 5%, rgba(110, 231, 242, 0.07), transparent 55%),
+        var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection { background: rgba(126, 231, 135, 0.25); }
+
+    a { color: inherit; text-decoration: none; }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 18px 24px;
+      backdrop-filter: blur(14px);
+      background: rgba(10, 14, 19, 0.72);
+      border-bottom: 1px solid rgba(31, 43, 54, 0.8);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-size: 1.05rem;
+    }
+
+    .brand svg { color: var(--green); }
+
+    .nav nav {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    .nav nav a { transition: color 160ms ease; }
+    .nav nav a:hover { color: var(--text); }
+
+    .nav .nav-cta {
+      color: var(--bg);
+      background: var(--green);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-weight: 650;
+      transition: transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    .nav .nav-cta:hover {
+      color: var(--bg);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 26px rgba(126, 231, 135, 0.22);
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: 56px;
+      align-items: center;
+      padding: 92px 0 84px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 650;
+      background: rgba(17, 25, 34, 0.6);
+    }
+
+    .badge .pulse {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(126, 231, 135, 0.12);
+    }
+
+    h1 {
+      margin: 22px 0 20px;
+      font-size: clamp(2.5rem, 5.2vw, 4.4rem);
+      line-height: 1.02;
+      letter-spacing: -0.045em;
+      font-weight: 760;
+    }
+
+    h1 .accent { color: var(--green); }
+
+    .lede {
+      margin: 0;
+      max-width: 620px;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border-radius: 11px;
+      font-weight: 650;
+      font-size: 0.95rem;
+      border: 1px solid transparent;
+      transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn.primary {
+      background: var(--green);
+      color: #07100a;
+      box-shadow: 0 10px 30px rgba(126, 231, 135, 0.18);
+    }
+
+    .btn.ghost {
+      border-color: var(--line-strong);
+      background: rgba(17, 25, 34, 0.55);
+      color: var(--text);
+    }
+
+    .btn.ghost:hover { border-color: var(--green-soft); }
+
+    .code-card {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+    }
+
+    .code-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      letter-spacing: 0.02em;
+    }
+
+    .code-head .lights { display: flex; gap: 6px; }
+    .code-head .lights i {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong);
+    }
+    .code-head .lights i:nth-child(1) { background: #ff7b72; opacity: .8; }
+    .code-head .lights i:nth-child(2) { background: var(--amber); opacity: .8; }
+    .code-head .lights i:nth-child(3) { background: var(--green); opacity: .8; }
+
+    pre {
+      margin: 0;
+      padding: 18px 20px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 0.83rem;
+      line-height: 1.65;
+      color: #c9d7e2;
+      background: transparent;
+    }
+
+    pre .cmd { color: var(--green); }
+    pre .flag { color: var(--cyan); }
+    pre .str { color: var(--amber); }
+    pre .comment { color: var(--muted-2); }
+
+    .section {
+      padding: 74px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 650;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: clamp(1.8rem, 3.2vw, 2.6rem);
+      line-height: 1.08;
+      letter-spacing: -0.035em;
+      font-weight: 730;
+    }
+
+    .section-intro {
+      margin: 0 0 36px;
+      max-width: 720px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(17, 25, 34, 0.82), rgba(13, 19, 25, 0.72));
+      transition: border-color 180ms ease, transform 180ms ease;
+    }
+
+    .card:hover {
+      border-color: var(--line-strong);
+      transform: translateY(-2px);
+    }
+
+    .card .icon {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 9px;
+      margin-bottom: 15px;
+      color: var(--green);
+      background: rgba(126, 231, 135, 0.09);
+      border: 1px solid rgba(126, 231, 135, 0.16);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 1.02rem;
+      letter-spacing: -0.01em;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .step {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(17, 25, 34, 0.55);
+    }
+
+    .step .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(126, 231, 135, 0.3);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      margin-bottom: 12px;
+    }
+
+    .step h3 { margin: 0 0 6px; font-size: 1rem; }
+    .step p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+    .diagram {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel-2);
+      padding: 22px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.55;
+    }
+
+    .diagram .hl { color: var(--green); }
+    .diagram .dim { color: var(--muted-2); }
+
+    .split {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    .checklist {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+
+    .checklist li {
+      display: flex;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .checklist li::before {
+      content: "✓";
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      background: rgba(17, 25, 34, 0.55);
+      font-family: var(--mono);
+    }
+
+    .chip .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      margin-top: 20px;
+      padding: 30px 24px 46px;
+      color: var(--muted-2);
+      font-size: 0.86rem;
+    }
+
+    footer .inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--green); }
+
+    .muted { color: var(--muted-2); }
+
+    @media (max-width: 980px) {
+      .hero { grid-template-columns: 1fr; gap: 36px; padding-top: 64px; }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .split { grid-template-columns: 1fr; gap: 26px; }
+    }
+
+    @media (max-width: 720px) {
+      .nav { padding: 14px 18px; }
+      .nav nav { gap: 14px; font-size: 0.85rem; }
+      .nav nav a:not(.nav-cta) { display: none; }
+      main { padding: 0 18px; }
+      .hero { padding: 52px 0 56px; }
+      .grid, .steps { grid-template-columns: 1fr; }
+      .section { padding: 56px 0; }
+      pre { font-size: 0.77rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="nav">
+    <a class="brand" href="#top" aria-label="uRep home">
+      <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <circle cx="16" cy="6" r="3.4" fill="currentColor"/>
+        <circle cx="6" cy="24" r="3.4" fill="currentColor"/>
+        <circle cx="26" cy="24" r="3.4" fill="currentColor"/>
+        <path d="M14.4 8.8 7.6 21.2M17.6 8.8l6.8 12.4M9.4 24h13.2" stroke="currentColor" stroke-width="1.4" opacity=".55"/>
+      </svg>
+      uRep
+    </a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#quickstart">Quick start</a>
+      <a href="https://github.com/nelebadnjak/urep/blob/master/docs/spec.md" target="_blank" rel="noopener">Spec</a>
+      <a class="nav-cta" href="https://github.com/nelebadnjak/urep#readme" target="_blank" rel="noopener">Get uRep</a>
+    </nav>
+  </header>
+
+  <main id="top">
+
+    <section class="hero">
+      <div>
+        <div class="badge"><span class="pulse"></span> P2P · no leader · git-backed</div>
+        <h1>Configuration files that <span class="accent">keep themselves</span> in sync.</h1>
+        <p class="lede">
+          uRep is a tiny, decentralized replication agent for configuration files.
+          Every node is equal. Every change is a git commit. Every message is
+          encrypted with your cluster token.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="#quickstart">Get started</a>
+          <a class="btn ghost" href="https://github.com/nelebadnjak/urep/blob/master/docs/spec.md" target="_blank" rel="noopener">Read the spec</a>
+        </div>
+      </div>
+
+      <div class="code-card" aria-label="Docker quick start">
+        <div class="code-head">
+          <span class="lights"><i></i><i></i><i></i></span>
+          <span>docker run</span>
+        </div>
+        <pre><code><span class="cmd">docker run</span> -d --name urep-app \
+  <span class="flag">-e</span> UREP_TOKEN=<span class="str">'cluster-secret'</span> \
+  <span class="flag">-e</span> UREP_TAG=<span class="str">nginx</span> \
+  <span class="flag">-e</span> UREP_PATH=<span class="str">/urep/app.yaml</span> \
+  <span class="flag">-e</span> UREP_POST_HOOK=<span class="str">'nginx -s reload'</span> \
+  <span class="flag">-v</span> /home/app/app.yaml:/urep/app.yaml \
+  <span class="flag">-v</span> urep-state:/var/lib/urep \
+  urep:latest</code></pre>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <p class="eyebrow">Why uRep</p>
+      <h2>Small surface, serious guarantees.</h2>
+      <p class="section-intro">
+        No database to operate, no coordinator to elect. Just files, git, and an
+        encrypted mesh that converges.
+      </p>
+
+      <div class="grid">
+        <article class="card">
+          <div class="icon">01</div>
+          <h3>No leader</h3>
+          <p>Every node is equal. No coordinator, no quorum, no failover dance.</p>
+        </article>
+        <article class="card">
+          <div class="icon">02</div>
+          <h3>Git is the state</h3>
+          <p>Each node mirrors files into a SHA-256 git repo. History is the source of truth.</p>
+        </article>
+        <article class="card">
+          <div class="icon">03</div>
+          <h3>Tag subscriptions</h3>
+          <p>A node listens only to messages tagged for it. A <code>waf</code> node never sees <code>nginx</code> configs.</p>
+        </article>
+        <article class="card">
+          <div class="icon">04</div>
+          <h3>Hooks that travel</h3>
+          <p>Pre/post commands ride with the file and run on the receiver, not the sender.</p>
+        </article>
+        <article class="card">
+          <div class="icon">05</div>
+          <h3>Encrypted by default</h3>
+          <p>One cluster token derives HKDF keys. ChaCha20-Poly1305 protects every frame.</p>
+        </article>
+        <article class="card">
+          <div class="icon">06</div>
+          <h3>Container-first</h3>
+          <p>One image, a couple of ENV vars, and a state volume. <code>urep</code> is the entrypoint.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <p class="eyebrow">How it works</p>
+      <h2>Watch. Commit. Replicate. Apply.</h2>
+      <p class="section-intro">
+        The loop is deliberately boring: detect a change, record it in git, send it
+        to matching peers, and let last-write-wins resolve the rest.
+      </p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="num">1</div>
+          <h3>Watch</h3>
+          <p>inotify on the parent directory. Debounce, re-hash the whole file, detect atomic saves.</p>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <h3>Commit</h3>
+          <p>Write the mirror, commit with an HLC version, mode, tags, and hook metadata.</p>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <h3>Replicate</h3>
+          <p>Encrypted <code>FILE_PUT</code> to peers whose tags match. LWW on apply, hooks on the receiver.</p>
+        </div>
+      </div>
+
+      <div class="diagram" aria-label="Architecture diagram">
+<pre><span class="hl">watcher</span> ──► <span class="hl">commit</span> ──► <span class="hl">replicator</span> ──► <span class="hl">transport</span> <span class="dim">(TCP + AEAD)</span>
+   │              │              │
+   │              ▼              ▼
+   │         <span class="hl">repo/ (git)</span>     <span class="hl">discovery</span> <span class="dim">(UDP multicast + gossip)</span>
+   │                             │
+   └──────────── ◄── <span class="hl">apply</span> ◄── <span class="hl">write</span> ◄── <span class="hl">hooks</span>
+                        │
+                        ▼
+                   <span class="dim">state.json · events.jsonl · peers.json</span></pre>
+      </div>
+    </section>
+
+    <section class="section" id="quickstart">
+      <p class="eyebrow">Quick start</p>
+      <div class="split">
+        <div>
+          <h2>Two containers, one file.</h2>
+          <p class="section-intro">
+            Build the image, then run the bundled two-node smoke test. It starts
+            two peers on the host network, changes a file on one, and verifies
+            that the other converges.
+          </p>
+          <ul class="checklist">
+            <li>Runs entirely in Docker</li>
+            <li>Uses seeds instead of multicast on a bridge/host network</li>
+            <li>Leaves containers running for inspection</li>
+            <li>Cleanup with <code>./test.sh --cleanup</code></li>
+          </ul>
+        </div>
+        <div class="code-card">
+          <div class="code-head">
+            <span class="lights"><i></i><i></i><i></i></span>
+            <span>terminal</span>
+          </div>
+<pre><code><span class="cmd">cd</span> urep
+<span class="cmd">make</span> build
+<span class="cmd">./test.sh</span>
+
+<span class="comment"># inspect the receiving node</span>
+<span class="cmd">docker exec</span> urep-b urep status
+<span class="cmd">docker exec</span> urep-b urep peers
+<span class="cmd">docker exec</span> urep-b urep log</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <p class="eyebrow">Project status</p>
+      <h2>Built in the open, milestone by milestone.</h2>
+      <p class="section-intro">
+        M0–M4 are implemented: Docker harness, git-backed state, encrypted
+        transport, discovery, and replication with hooks.
+      </p>
+      <div class="status-row">
+        <span class="chip"><span class="dot"></span> M0–M4 implemented</span>
+        <span class="chip">80+ tests</span>
+        <span class="chip">Python 3.12</span>
+        <span class="chip">Docker</span>
+        <span class="chip">Apache-2.0</span>
+      </div>
+      <div class="actions">
+        <a class="btn ghost" href="https://github.com/nelebadnjak/urep/blob/master/docs/cli.md" target="_blank" rel="noopener">CLI reference</a>
+        <a class="btn ghost" href="https://github.com/nelebadnjak/urep/blob/master/docs/docker.md" target="_blank" rel="noopener">Docker setup</a>
+        <a class="btn ghost" href="https://github.com/nelebadnjak/urep/blob/master/docs/spec.md" target="_blank" rel="noopener">Full specification</a>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="inner">
+      <span>uRep — micro replication. Built with Python, git, and Docker.</span>
+      <span><a href="https://github.com/nelebadnjak/urep#readme" target="_blank" rel="noopener">README</a> · <a href="https://github.com/nelebadnjak/urep/blob/master/LICENSE.md" target="_blank" rel="noopener">Apache-2.0</a> · <a href="#top">Back to top</a></span>
+    </div>
+  </footer>
+
+</body>
+</html>
